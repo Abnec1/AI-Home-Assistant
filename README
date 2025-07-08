@@ -1,0 +1,34 @@
+# 🎙️ Python Voice Assistant (GPT-4.1 + Wake Word + Offline STT)
+
+This project is a simple offline-first Python voice assistant that listens for a wake word ("hey assistant"), records your question using a microphone, sends it to GPT-4.1 via a GitHub-provided token, and then speaks the AI’s response aloud.
+
+No PyAudio required – works fully offline for speech-to-text using Vosk.
+
+---
+
+## 📦 Features
+
+- 🛑 Wake word: “hey assistant”
+- 🧠 Uses GPT-4.1 via GitHub API token
+- 🔊 Text-to-speech output using `pyttsx3`
+- 🎤 Speech recognition using Vosk (offline!)
+- 🧼 Exit command support: say "exit", "stop", "goodbye", etc.
+- 🖥️ Cross-platform (tested on macOS, Windows)
+
+---
+
+## 🖥️ Prerequisites
+
+- Python 3.8 or newer
+- GitHub token with access to GPT-4.1 via [models.github.ai](https://models.github.ai/)
+- Internet access for GPT, but speech recognition works offline
+
+---
+
+## 🧰 Installation
+
+### 1. Clone this repository or copy the script
+
+```bash
+git clone https://github.com/yourusername/python-voice-assistant
+cd python-voice-assistant
