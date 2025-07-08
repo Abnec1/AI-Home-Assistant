@@ -1,0 +1,85 @@
+import queue
+import sounddevice as sd
+import json
+from vosk import Model, KaldiRecognizer
+import pyttsx3
+from openai import OpenAI
+
+# === CONFIG ===
+VOSK_MODEL_PATH = "vosk-model-small-en-us-0.15"
+WAKE_WORD = "hey assistant"
+EXIT_COMMANDS = ["exit", "quit", "goodbye", "stop"]
+
+# === GPT SETUP ===
+client = OpenAI(
+    base_url="https://models.github.ai/inference",
+    api_key="your token here"
+)
+
+# === TTS SETUP ===
+engine = pyttsx3.init()
+engine.setProperty("rate", 180)
+
+# === VOSK SETUP ===
+model = Model(VOSK_MODEL_PATH)
+rec = KaldiRecognizer(model, 16000)
+q = queue.Queue()
+
+def audio_callback(indata, frames, time, status):
+    if status:
+        print("⚠️", status)
+    q.put(bytes(indata))
+
+def listen_for_wake_word():
+    print("🎙️ Waiting for wake word ('hey assistant')...")
+    with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
+                           channels=1, callback=audio_callback):
+        while True:
+            data = q.get()
+            if rec.AcceptWaveform(data):
+                result = json.loads(rec.Result())
+                text = result.get("text", "").lower()
+                if WAKE_WORD in text:
+                    print("🟢 Wake word detected!")
+                    return
+
+def capture_query():
+    print("🎤 Listening for your question...")
+    rec2 = KaldiRecognizer(model, 16000)
+    with sd.RawInputStream(samplerate=16000, blocksize=8000, dtype='int16',
+                           channels=1, callback=audio_callback):
+        while True:
+            data = q.get()
+            if rec2.AcceptWaveform(data):
+                result = json.loads(rec2.Result())
+                text = result.get("text", "").lower()
+                if text:
+                    print("You said:", text)  # Just print text without emojis or extra icons
+                    return text
+
+def ask_gpt(prompt):
+    print("🤖 Asking GPT...")
+    response = client.chat.completions.create(
+        model="openai/gpt-4.1",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return response.choices[0].message.content
+
+def speak(text):
+    print("🧠 GPT:", text)
+    engine.say(text)
+    engine.runAndWait()
+
+# === MAIN LOOP ===
+while True:
+    listen_for_wake_word()
+    query = capture_query()
+    if query:
+        if query.strip().lower() in EXIT_COMMANDS:
+            speak("Goodbye!")
+            break
+        response = ask_gpt(query)
+        speak(response)
